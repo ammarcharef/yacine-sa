@@ -1,0 +1,7 @@
+body{font-family: Tahoma, Arial, sans-serif}
+.logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#00d28a,#00a78f);display:flex;align-items:center;justify-content:center;font-weight:800;color:#001}
+.card{background:#0f1720;border:1px solid rgba(255,255,255,0.03);border-radius:10px}
+.bg-dark{background:#0b0f13}
+.text-muted{color:rgba(255,255,255,0.55)}
+.btn-primary{background:#00d28a;border-color:#00d28a}
+.modal .modal-content{background:#071116}

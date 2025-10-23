@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>لوحة Ycine SA</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-dark text-light">
+  <nav class="navbar navbar-dark bg-dark px-4">
+    <a class="navbar-brand" href="#">Ycine SA</a>
+    <div class="d-flex align-items-center gap-2">
+      <div id="navBalance" class="me-3">رصيد: 0 دج</div>
+      <button id="btnGoWithdraw" class="btn btn-outline-light btn-sm">طلب سحب</button>
+      <button id="btnLogout" class="btn btn-outline-danger btn-sm">خروج</button>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 id="userName">اسم المستخدم</h5>
+              <small id="userLevel" class="text-muted">المستوى: Bronze</small>
+            </div>
+            <div>
+              <small class="text-muted">مشاهدات اليوم</small>
+              <div id="todayCount">0/10</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-3 mb-3">
+          <h6>عروض الفيديو</h6>
+          <div id="videosList" class="row g-3 mt-2"></div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card p-3 mb-3">
+          <h6>رمز الدعوة</h6>
+          <div class="d-flex gap-2">
+            <input id="inviteBox" class="form-control form-control-sm" readonly />
+            <button id="copyInvite" class="btn btn-sm btn-light">نسخ</button>
+          </div>
+          <div class="mt-2 small text-muted">عمولة دعوة: 10% من أرباح المدعو (متكررة)</div>
+        </div>
+
+        <div class="card p-3 mb-3">
+          <h6>المهام اليومية</h6>
+          <div>شاهد 5 فيديوهات اليوم لتحصل على بونص 500 دج</div>
+          <div class="mt-2">
+            <div>تقدّم: <span id="dailyProg">0</span>/5</div>
+            <button id="claimDaily" class="btn btn-sm btn-success mt-2">مطالبة البونص</button>
+          </div>
+        </div>
+
+        <div class="card p-3">
+          <h6>سجل السحوبات</h6>
+          <div id="withdrawHistory" class="small text-muted">لا توجد سحوبات بعد</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- player modal -->
+<div id="playerModal" class="modal" tabindex="-1" style="display:none;background:rgba(0,0,0,0.6)">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header">
+        <h5 id="pTitle" class="modal-title">تشغيل الإعلان</h5>
+        <button type="button" class="btn-close btn-close-white" id="closeModal"></button>
+      </div>
+      <div class="modal-body">
+        <video id="playerVideo" controls style="width:100%;background:#000"></video>
+        <div class="mt-2 small text-muted">المكافأة تظهر بعد الاكتمال الكامل فقط.</div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnClaim" class="btn btn-primary" disabled>مطالبة مكافأة</button>
+        <button id="btnClose" class="btn btn-secondary">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
