@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Demo PSP</title></head>
+<body style="font-family:Arial;padding:20px;">
+  <h3>محاكاة ربط البطاقة (DEMO)</h3>
+  <p>اضغط زر لمحاكاة إتمام الربط. سيتم استدعاء webhook محلي.</p>
+  <input id="userId" placeholder="userId" style="width:100%;padding:8px;margin-bottom:8px"/>
+  <button id="btn" style="padding:10px 20px;">محاكاة الربط</button>
+  <script>
+    document.getElementById('btn').addEventListener('click', ()=>{
+      const u = encodeURIComponent(document.getElementById('userId').value||'');
+      if(!u){ alert('أدخل userId'); return; }
+      // open callback to server to simulate webhook (GET demo)
+      const cb = `${location.origin.replace('/static','')}/api/link-card/callback?demo_token=tok_demo_${Date.now()}&last4=4321&userId=${u}`;
+      window.open(cb,'_blank');
+      alert('تم إرسال المحاكاة. افحص لوحة المستخدم بعد ثوانٍ.');
+    });
+  </script>
+</body>
+</html>

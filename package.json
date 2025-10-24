@@ -1,7 +1,6 @@
 {
   "name": "ycine-sa",
   "version": "1.0.0",
-  "description": "Ycine SA - local reward platform (Node + Express, JSON DB)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -12,6 +11,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^6.8.0",
     "helmet": "^7.0.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "node-fetch": "^2.6.7"
   }
 }

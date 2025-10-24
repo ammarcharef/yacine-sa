@@ -1,5 +1,4 @@
 // public/app.js
-// Frontend logic: talks to /api/* endpoints
 (function(){
   const API = {
     signup: '/api/signup',
@@ -8,16 +7,14 @@
     progress: '/api/progress',
     claim: '/api/claim',
     withdraw: '/api/withdraw',
+    linkCard: '/api/link-card',
     adminUsers: '/api/admin/users'
   };
 
-  // helpers
   function $id(id){return document.getElementById(id)}
   function handleError(e){ console.error(e); alert('حدث خطأ، تحقق من الكونسول.'); }
 
-  // ---------- index.html handlers ----------
   if($id('btnLocal')){
-    // login/register
     $id('btnLocal').addEventListener('click', async ()=>{
       const name = $id('txtName').value.trim();
       const urlParams = new URLSearchParams(window.location.search);
@@ -38,62 +35,58 @@
       if(name){ $id('txtName').value = name; $id('btnLocal').click(); }
     });
     $id('btnFacebook').addEventListener('click', ()=> {
-      const name = prompt('اسم حساب Facebook (محاكٍ)');
+      const name = prompt('اسم حساب Facebook (محاكي)');
       if(name){ $id('txtName').value = name; $id('btnLocal').click(); }
     });
   }
 
-  // ---------- dashboard.html handlers ----------
-  if(location.pathname.endsWith('/dashboard') || location.pathname.endsWith('/dashboard/')){
-    // ensure user
+  if(location.pathname.endsWith('/dashboard')){
     const raw = sessionStorage.getItem('ycine_user'); if(!raw){ location.href = '/'; return; }
-    const me = JSON.parse(raw);
-    // load profile fresh
+    let me = JSON.parse(raw);
+
+    // refresh profile
     fetch(API.login, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:me.name})})
-      .then(r=>r.json()).then(async j=>{
-        if(j.error) { alert('خطأ: ' + j.error); sessionStorage.removeItem('ycine_user'); location.href='/'; return; }
-        const user = j.user; sessionStorage.setItem('ycine_user', JSON.stringify(user));
-        // render basic infos
-        $id('userName').innerText = user.name;
-        $id('navBalance').innerText = `رصيد: ${user.balance} دج`;
-        $id('inviteBox').value = user.inviteCode;
-        loadVideos(user.id);
-        loadWithdraws(user.id);
+      .then(r=>r.json()).then(j=>{
+        if(j.error){ sessionStorage.removeItem('ycine_user'); location.href='/'; return; }
+        me = j.user; sessionStorage.setItem('ycine_user', JSON.stringify(me));
+        $id('userName').innerText = me.name;
+        $id('navBalance').innerText = `رصيد: ${me.balance} دج`;
+        $id('inviteBox').value = me.inviteCode;
+        loadVideos(me.id);
+        updateLinkStatus(me);
       }).catch(handleError);
 
-    $id('btnLogout').addEventListener('click', ()=>{ sessionStorage.removeItem('ycine_user'); location.href='/'; });
+    $id('btnLogout').addEventListener('click', ()=>{ sessionStorage.removeItem('ycine_user'); location.href = '/'; });
     $id('copyInvite').addEventListener('click', ()=>{ $id('inviteBox').select(); document.execCommand('copy'); alert('تم نسخ رمز الدعوة'); });
-
     $id('btnGoWithdraw').addEventListener('click', ()=> location.href = '/withdraw');
 
-    $id('claimDaily') && $id('claimDaily').addEventListener('click', async ()=>{
-      // ask server for current user
-      const raw2 = sessionStorage.getItem('ycine_user'); if(!raw2) return;
-      const u = JSON.parse(raw2);
-      // simple local check: count daily watched via /api/admin/users (or in a real DB you'd query)
+    // link card button
+    $id('btnLinkCard').addEventListener('click', async ()=>{
+      const user = JSON.parse(sessionStorage.getItem('ycine_user'));
+      if(!user){ alert('سجل أولا'); return; }
       try{
-        const users = await (await fetch(API.adminUsers)).json();
-        const my = users.find(x=>x.id===u.id);
-        const progress = my && my.dailyCount ? my.dailyCount.count : 0;
-        if(progress >=5){ alert('سيتم إضافة 500 دج'); // For simplicity: call /api/withdraw? (we didn't implement server daily bonus endpoint)
-          // In this demo we won't implement a separate endpoint; user can simply watch 5 videos then we add bonus via claim logic
-        } else alert('أكمل 5 فيديوهات اليوم ثم حاول مطالبة البونص');
+        const r = await fetch(API.linkCard, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: user.id }) });
+        const j = await r.json();
+        if(j.ok && j.url){
+          window.open(j.url, '_blank');
+          alert('تم فتح صفحة ربط البطاقة. بعد الإتمام سيتم تحديث حسابك تلقائياً.');
+        } else alert('خطأ في إنشاء جلسة الربط');
       }catch(handleError);
     });
 
-    // close modal
-    const playerModal = document.getElementById('playerModal');
-    const playerVideo = document.getElementById('playerVideo');
-    let activeVid = null;
-    const playerClaim = document.getElementById('btnClaim');
-    document.getElementById('closeModal').addEventListener('click', ()=> { playerVideo.pause(); playerModal.style.display='none'; playerClaim.disabled=true; });
+    function updateLinkStatus(user){
+      if(user.linked_payment_id) $id('linkStatus').innerText = 'البطاقة مربوطة ✔️';
+      else $id('linkStatus').innerText = 'لم يتم ربط البطاقة بعد';
+    }
 
+    // video player logic (same as earlier) ...
+    // For brevity reuse earlier logic: loadVideos, openPlayer, progress, claim
+    // loadVideos:
     async function loadVideos(userId){
       try{
         const res = await fetch(API.videos);
         const vids = await res.json();
         const list = $id('videosList'); list.innerHTML = '';
-        // fetch fresh user data to determine watched
         const userRes = await fetch(API.login, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: JSON.parse(sessionStorage.getItem('ycine_user')).name})});
         const user = (await userRes.json()).user;
         vids.forEach(v=>{
@@ -111,6 +104,12 @@
       }catch(handleError){};
     }
 
+    // player modal handlers
+    const playerModal = document.getElementById('playerModal');
+    const playerVideo = document.getElementById('playerVideo');
+    let activeVid = null;
+    const playerClaim = document.getElementById('btnClaim');
+    document.getElementById('closeModal').addEventListener('click', ()=> { playerVideo.pause(); playerModal.style.display='none'; playerClaim.disabled=true; });
     function openPlayer(v){
       activeVid = v;
       playerVideo.src = v.src;
@@ -121,19 +120,15 @@
       playerVideo.play().catch(()=>{});
     }
 
-    // progress tracking - simple: every 5 sec send progress
-    let reportInterval = null;
     playerVideo && playerVideo.addEventListener('timeupdate', ()=>{
       const ct = Math.floor(playerVideo.currentTime||0);
       if(ct && ct % 5 === 0 && activeVid){
-        // send progress
         const userInfo = JSON.parse(sessionStorage.getItem('ycine_user'));
         fetch(API.progress, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:userInfo.id, videoId:activeVid.id, currentTime:ct, completed:false })}).catch(()=>{});
       }
     });
 
     playerVideo && playerVideo.addEventListener('ended', ()=>{
-      // send completed
       const userInfo = JSON.parse(sessionStorage.getItem('ycine_user'));
       fetch(API.progress, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:userInfo.id, videoId:activeVid.id, currentTime: Math.floor(playerVideo.duration||0), completed:true })})
         .then(()=>{ playerClaim.disabled = false; }).catch(()=>{});
@@ -144,21 +139,16 @@
         const userInfo = JSON.parse(sessionStorage.getItem('ycine_user'));
         const res = await fetch(API.claim, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:userInfo.id, videoId: activeVid.id })});
         const j = await res.json();
-        if(j.ok){ alert('تم إضافة '+ j.reward + ' دج إلى رصيدك'); sessionStorage.setItem('ycine_user', JSON.stringify({id:userInfo.id, name:userInfo.name, balance:j.newBalance, inviteCode:userInfo.inviteCode})); location.reload(); }
+        if(j.ok){ alert('تم إضافة '+ j.reward + ' دج إلى رصيدك'); sessionStorage.setItem('ycine_user', JSON.stringify({id:userInfo.id, name:userInfo.name, balance:j.newBalance, inviteCode:userInfo.inviteCode, linked_payment_id:userInfo.linked_payment_id})); location.reload(); }
         else alert('لم يتم التأكيد: ' + (j.error||'خطأ'));
       }catch(handleError);
     });
 
-    function loadWithdraws(userId){
-      // show list from /api/admin/users (we simplified)
-      fetch(API.adminUsers).then(r=>r.json()).then(users=>{
-        const u = users.find(x=>x.id === JSON.parse(sessionStorage.getItem('ycine_user')).id);
-        if(u){ $id('todayCount').innerText = `${(u.dailyCount && u.dailyCount.count) || 0}/10`; $id('navBalance').innerText = `رصيد: ${u.balance} دج`; $id('inviteBox').value = u.inviteCode; $id('dailyProg').innerText = (u.dailyCount && u.dailyCount.count) || 0; }
-      }).catch(()=>{});
-    }
+    // claim daily placeholder
+    $id('claimDaily') && $id('claimDaily').addEventListener('click', ()=> alert('ميزة البونص اليومي ستُفعّل قريباً'));
   }
 
-  // ---------- withdraw.html handlers ----------
+  // withdraw page handlers
   if(location.pathname.endsWith('/withdraw')){
     const raw = sessionStorage.getItem('ycine_user'); if(!raw) { location.href='/'; return; }
     const u = JSON.parse(raw);
@@ -168,10 +158,9 @@
       try{
         const res = await fetch(API.withdraw, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:u.id, amount:amt })});
         const j = await res.json();
-        if(j.ok){ $id('withdrawMsg').innerText = `تمت معالجة الطلب: سيتم تحويل ${j.net} دج بعد رسم ${j.fee} دج`; sessionStorage.setItem('ycine_user', JSON.stringify({id:u.id, name:u.name, balance:(u.balance-amt), inviteCode:u.inviteCode})); }
+        if(j.ok){ $id('withdrawMsg').innerText = `تمت معالجة الطلب: سيتم تحويل ${j.net} دج بعد رسم ${j.fee} دج`; sessionStorage.setItem('ycine_user', JSON.stringify({id:u.id, name:u.name, balance:(u.balance-amt), inviteCode:u.inviteCode, linked_payment_id:u.linked_payment_id})); }
         else alert('لم تتم العملية: ' + (j.error||'خطأ'));
       }catch(handleError);
     });
   }
-
 })();
